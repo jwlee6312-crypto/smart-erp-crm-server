@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crmbank.erp.haaa.mapper.HaaaMapper">
+
+    <select id="HAAA_010U_SELECT" parameterType="map" resultType="map">
+        <choose>
+            <when test='actkind == "S1"'>
+                SELECT cdtype, codecd, codenm, remark, dspord, useyn
+                  FROM haba900t_tbl
+                 WHERE cdtype = CASE WHEN #{cdtype} = '' OR #{cdtype} IS NULL THEN '000' ELSE #{cdtype} END
+                   AND useyn = 'Y'
+                 ORDER BY cdtype, codecd, dspord
+            </when>
+            <when test='actkind == "S2"'>
+                SELECT cdtype, codecd, codenm, remark, dspord, useyn
+                  FROM haba900t_tbl
+                 WHERE cdtype = #{cdtype}
+                   <if test='cdtype != "000"'>
+                   AND useyn = 'Y'
+                   </if>
+                 ORDER BY dspord, codecd
+            </when>
+            <when test='actkind == "S3"'>
+                SELECT cdtype, codecd, codenm, remark, dspord, useyn
+                  FROM haba900t_tbl
+                 WHERE cdtype = #{cdtype}
+                 ORDER BY dspord, codecd
+            </when>
+            <when test='actkind == "SR"'>
+                SELECT cdtype, codecd, codenm, remark, dspord, useyn
+                  FROM haba900t_tbl
+                 WHERE cdtype = #{codecd}
+                   AND codenm LIKE CONCAT('%', #{codenm}, '%')
+                 ORDER BY cdtype, codecd, dspord
+            </when>
+        </choose>
+    </select>
+
+    <insert id="HAAA_010U_UPSERT" parameterType="map">
+        INSERT INTO haba900t_tbl (cdtype, codecd, codenm, remark, dspord, useyn, crttime, updtime, updemp)
+        VALUES (#{cdtype}, #{codecd}, #{codenm}, #{remark}, CAST(IFNULL(NULLIF(#{dspord}, ''), '0') AS SIGNED), #{useyn}, NOW(), NOW(), #{updemp})
+        ON DUPLICATE KEY UPDATE
+        codenm = VALUES(codenm), remark = VALUES(remark), dspord = VALUES(dspord), useyn = VALUES(useyn), updtime = NOW(), updemp = VALUES(updemp)
+    </insert>
+
+    <update id="HAAA_010U_UPDATE" parameterType="map">
+        UPDATE haba900t_tbl
+           SET codenm = #{codenm},
+               dspord = CAST(IFNULL(NULLIF(#{dspord}, ''), '0') AS SIGNED),
+               remark = #{remark},
+               useyn = #{useyn},
+               updtime = NOW(),
+               updemp = #{updemp}
+         WHERE cdtype = #{cdtype} AND codecd = #{codecd}
+    </update>
+
+    <!-- HAAA_800U_STR Procedures -->
+    <select id="HAAA_800U_SELECT" parameterType="map" resultType="map">
+        select a.pgmid, a.pgmnm, a.upmucd, c.codenm as upmunm, a.grpcd, b.grpnm, a.dspord, a.useyn
+          from haaa800t_tbl a
+          left outer join haaa810t_tbl b on a.upmucd = b.upmucd and a.grpcd = b.grpcd
+          left outer join haba900t_tbl c on c.cdtype = '320' and a.upmucd = c.codecd
+         where 1=1
+           <if test='upmucd != null and upmucd != ""'>
+             and a.upmucd = #{upmucd}
+           </if>
+           <if test='grpcd != null and grpcd != ""'>
+             and a.grpcd = #{grpcd}
+           </if>
+           <if test='pgmnm != null and pgmnm != ""'>
+             and a.pgmnm like concat('%', #{pgmnm}, '%')
+           </if>
+         order by a.dspord
+    </select>
+
+    <insert id="HAAA_800U_INSERT" parameterType="map">
+        INSERT INTO haaa800t_tbl (pgmid, upmucd, grpcd, pgmnm, dspord, useyn, addtime, updtime, updemp)
+        VALUES (#{pgmid}, #{upmucd}, #{grpcd}, #{pgmnm}, COALESCE(NULLIF(#{dspord}, ''), 0), COALESCE(NULLIF(#{useyn}, ''), 'Y'), NOW(), NOW(), #{updemp})
+    </insert>
+
+    <update id="HAAA_800U_UPDATE" parameterType="map">
+        UPDATE haaa800t_tbl
+           SET grpcd = #{grpcd},
+               upmucd = #{upmucd},
+               pgmnm = #{pgmnm},
+               dspord = COALESCE(NULLIF(#{dspord}, ''), 0),
+               useyn = COALESCE(NULLIF(#{useyn}, ''), 'Y'),
+               updtime = NOW(),
+               updemp = #{updemp}
+         WHERE pgmid = #{pgmid}
+    </update>
+
+    <delete id="HAAA_800U_DELETE" parameterType="map">
+        DELETE FROM haaa800t_tbl WHERE pgmid = #{pgmid};
+        DELETE FROM haba940t_tbl WHERE pgmid = #{pgmid};
+    </delete>
+
+
+    <!-- HAAA_810U_STR Procedures -->
+    <select id="HAAA_810U_SELECT" parameterType="map" resultType="map">
+        SELECT upmucd, grpcd, grpnm, dspord, useyn
+          FROM haaa810t_tbl
+         WHERE 1=1
+           <if test='upmucd != null and upmucd != ""'>
+             AND upmucd = #{upmucd}
+           </if>
+         ORDER BY upmucd, dspord
+    </select>
+
+    <insert id="HAAA_810U_UPSERT" parameterType="map">
+        INSERT INTO haaa810t_tbl (upmucd, grpcd, grpnm, dspord, useyn, addtime, updtime, updemp)
+        VALUES (#{upmucd}, #{grpcd}, #{grpnm}, COALESCE(NULLIF(#{dspord}, ''), 0), COALESCE(NULLIF(#{useyn}, ''), 'Y'), NOW(), NOW(), #{updemp})
+        ON DUPLICATE KEY UPDATE
+            grpnm = VALUES(grpnm),
+            dspord = VALUES(dspord),
+            useyn = VALUES(useyn),
+            updtime = NOW(),
+            updemp = VALUES(updemp)
+    </insert>
+
+    <update id="HAAA_810U_UPDATE" parameterType="map">
+        UPDATE haaa810t_tbl
+           SET grpnm = #{grpnm},
+               dspord = COALESCE(NULLIF(#{dspord}, ''), 0),
+               useyn = COALESCE(NULLIF(#{useyn}, ''), 'Y'),
+               updtime = NOW(),
+               updemp = #{updemp}
+         WHERE upmucd = #{upmucd} AND grpcd = #{grpcd}
+    </update>
+
+    <delete id="HAAA_810U_DELETE_CASCADE" parameterType="map">
+        DELETE FROM haaa810t_tbl WHERE upmucd = #{upmucd} AND grpcd = #{grpcd};
+        DELETE FROM haba930t_tbl WHERE upmucd = #{upmucd} AND grpcd = #{grpcd};
+        DELETE FROM haba940t_tbl WHERE upmucd = #{upmucd} AND grpcd = #{grpcd};
+    </delete>
+
+</mapper>

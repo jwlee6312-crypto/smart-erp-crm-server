@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crmbank.erp.haba.mapper.HabaMapper">
+
+    <select id="HABA_060U_SELECT" parameterType="map" resultType="map">
+        select a.cmpycd,  a.deptcd,  a.deptnm,  a.deptsnm, ifnull(a.deptenm,'') as deptenm, a.updept, ifnull(a.deptdum, '') as deptdum, ifnull(a.deptemp, '') as deptemp,
+               a.frymd,   a.toymd,   a.taxunit, a.costgbn, a.dspord, 0 as lev, ifnull(c.deptnm, '') as updeptnm, ifnull(d.usernm, '') as empnm
+          from haba120t_tbl a
+          left outer join haba120t_tbl c
+            on a.cmpycd  = c.cmpycd
+           and a.updept  = c.deptcd
+          left outer join haba920t_tbl d
+            on a.cmpycd  = d.cmpycd
+           and a.deptemp = d.userid
+         where a.cmpycd   = #{cmpycd}
+           <if test="deptnm != null and deptnm != ''">
+             and a.deptnm like concat('%', trim(#{deptnm}), '%')
+           </if>
+         order by a.dspord
+    </select>
+
+    <insert id="HABA_060U_INSERT" parameterType="map">
+        INSERT INTO haba120t_tbl
+        (cmpycd, deptcd, deptnm, deptsnm, deptenm, updept, deptdum, deptemp,
+         frymd, toymd, taxunit, costgbn, dspord, useyn, addtime, updtime, updemp)
+        VALUES
+        (#{cmpycd}, #{deptcd}, #{deptnm}, #{deptsnm}, #{deptenm}, #{updept}, #{deptdum}, #{deptemp},
+         REPLACE(IFNULL(#{deptopn}, ''), '-', ''), REPLACE(IFNULL(#{deptcld}, ''), '-', ''), #{taxunit}, #{costgbn}, CAST(IFNULL(NULLIF(#{dspord}, ''), '0') AS SIGNED), 'Y', NOW(), NOW(), #{updemp})
+    </insert>
+
+    <update id="HABA_060U_UPDATE" parameterType="map">
+        UPDATE haba120t_tbl
+           SET deptnm   = #{deptnm},
+               deptsnm  = #{deptsnm},
+               deptenm  = #{deptenm},
+               updept   = #{updept},
+               deptdum  = #{deptdum},
+               deptemp  = #{deptemp},
+               frymd    = REPLACE(IFNULL(#{deptopn}, ''), '-', ''),
+               toymd    = REPLACE(IFNULL(#{deptcld}, ''), '-', ''),
+               taxunit  = #{taxunit},
+               costgbn  = #{costgbn},
+               dspord   = CAST(IFNULL(NULLIF(#{dspord}, ''), '0') AS SIGNED),
+               useyn    = #{useyn},
+               updtime  = NOW(),
+               updemp   = #{updemp}
+         WHERE cmpycd   = #{cmpycd}
+           AND deptcd   = #{deptcd}
+    </update>
+
+    <delete id="HABA_060U_DELETE" parameterType="map">
+        DELETE FROM haba120t_tbl
+         WHERE cmpycd   = #{cmpycd}
+           AND deptcd   = #{deptcd}
+    </delete>
+
+    <select id="HABA_100U_STR" parameterType="map" resultType="map">
+        <choose>
+            <when test="actkind == 'S0'">
+                select a.clsymd, a.gline1, a.gline2, a.gline3, a.gline4, a.gline5, a.bgtype, a.stkgbn, a.mnfyn,
+                       a.logoimg, a.stampimg, a.slipyn, a.cardcust, b.custnm, a.pricegbn, a.stokyn, a.yeosinyn, a.iocnfmyn, a.outacctyn, a.ai_mode
+                  from haba910t_tbl a left outer join haba020t_tbl b
+                    on a.cmpycd   = b.cmpycd
+                   and a.cardcust = b.custcd
+                 where a.cmpycd    = #{cmpycd}
+            </when>
+            <when test="actkind == 'U0'">
+                insert into haba910t_tbl
+                (cmpycd, clsymd, gline1, gline2, gline3, gline4, gline5, bgtype, stkgbn,
+                 mnfyn, pricegbn, stokyn, slipyn, cardcust, logoimg, stampimg, updtime, updemp, yeosinyn, iocnfmyn, outacctyn, ai_mode)
+                values
+                (#{cmpycd}, #{clsymd}, #{gline1}, #{gline2}, #{gline3}, #{gline4}, #{gline5}, #{bgtype}, #{stkgbn},
+                 #{mnfyn}, #{pricegbn}, #{stokyn}, #{slipyn}, #{cardcust}, #{logoimg}, #{stampimg}, now(), #{updemp}, #{yeosinyn}, #{iocnfmyn}, #{outacctyn}, #{ai_mode})
+                on duplicate key update
+                clsymd = values(clsymd), gline1 = values(gline1), gline2 = values(gline2),
+                gline3 = values(gline3), gline4 = values(gline4), gline5 = values(gline5),
+                bgtype = values(bgtype), stkgbn = values(stkgbn), mnfyn = values(mnfyn),
+                cardcust = values(cardcust), pricegbn = values(pricegbn), stokyn = values(stokyn),
+                slipyn = values(slipyn), updtime = now(), updemp = values(updemp),
+                logoimg = values(logoimg), stampimg = values(stampimg),
+                yeosinyn = values(yeosinyn), iocnfmyn = values(iocnfmyn), outacctyn = values(outacctyn), ai_mode = values(ai_mode);
+
+                SELECT 'OK' AS RESULT, '' AS MSG;
+            </when>
+            <when test="actkind == 'U1'">
+                UPDATE haba910t_tbl
+                   SET updemp  = #{updemp}, logoimg = #{logoimg}
+                 WHERE cmpycd  = #{cmpycd};
+
+                SELECT 'OK' AS RESULT, '' AS MSG;
+            </when>
+            <when test="actkind == 'U2'">
+                UPDATE haba910t_tbl
+                   SET updemp  = #{updemp}, stampimg = #{stampimg}
+                 WHERE cmpycd  = #{cmpycd};
+
+                SELECT 'OK' AS RESULT, '' AS MSG;
+            </when>
+            <when test="actkind == 'D0'">
+                DELETE FROM haba910t_tbl
+                 WHERE cmpycd  = #{cmpycd};
+
+                SELECT 'OK' AS RESULT, '' AS MSG;
+            </when>
+        </choose>
+    </select>
+
+    <select id="HABA_900U_STR" parameterType="map" resultType="map">
+        <choose>
+            <when test="actkind == 'S0'">
+                SELECT cmpycd,  cmpynm, saupno, legalno, cmpyenm, bossnm,  bossenm, juminno, postno,
+                       address, d_address,upjong, uptae,  telno,   faxno,   fondymd, closemm, domain,  eipyn,   elcyn, useyn
+                  FROM haba990t_tbl
+                 WHERE cmpycd = #{cmpycd}
+            </when>
+            <when test="actkind == 'S1'">
+                SELECT cmpycd,  cmpynm, saupno, legalno, cmpyenm, bossnm,  bossenm, juminno, postno,
+                       address, d_address, upjong, uptae,  telno,   faxno,   fondymd, closemm, domain,  eipyn,   elcyn, useyn,   addtime
+                  FROM haba990t_tbl
+                 WHERE cmpynm LIKE CONCAT('%', TRIM(#{cmpynm}), '%')
+                 ORDER BY addtime DESC
+            </when>
+            <when test="actkind == 'A0'">
+                INSERT INTO haba990t_tbl
+                (cmpycd, cmpynm, saupno, legalno, cmpyenm, bossnm, bossenm, juminno, postno,
+                 address, d_address, upjong, uptae, telno, faxno, fondymd, closemm, domain, elcyn, eipyn, useyn, addtime, updtime, updemp)
+                VALUES
+                (#{cmpycd}, #{cmpynm}, #{saupno}, #{legalno}, #{cmpyenm}, #{bossnm}, #{bossenm}, #{juminno}, #{postno},
+                 #{address}, #{d_address}, #{upjong}, #{uptae}, #{telno}, #{faxno}, #{fondymd}, #{closemm}, LOWER(REPLACE(#{domain}, 'www.', '')), #{eipyn}, #{elcyn}, #{useyn},
+                 NOW(), NOW(), #{updemp})
+                ON DUPLICATE KEY UPDATE
+                cmpynm = VALUES(cmpynm), saupno = VALUES(saupno), legalno = VALUES(legalno), cmpyenm = VALUES(cmpyenm),
+                bossnm = VALUES(bossnm), bossenm = VALUES(bossenm), juminno = VALUES(juminno), postno = VALUES(postno),
+                address = VALUES(address), d_address = VALUES(d_address), upjong = VALUES(upjong), uptae = VALUES(uptae),
+                telno = VALUES(telno), faxno = VALUES(faxno), fondymd = VALUES(fondymd), closemm = VALUES(closemm),
+                domain = VALUES(domain), eipyn = VALUES(eipyn), elcyn = VALUES(elcyn), useyn = VALUES(useyn),
+                updtime = NOW(), updemp = VALUES(updemp);
+
+                SELECT 'OK' AS RESULT, '' AS MSG;
+            </when>
+        </choose>
+    </select>
+
+    <select id="HABA_910U_SELECT" parameterType="map" resultType="map">
+        select  a.cmpycd,   a.userid,   a.usernm,   a.deptcd,   a.deptnm,
+                a.pw,       a.telno,    a.hpno,     a.email,
+                a.useyn,    a.pricegbn, a.photo_path, a.inner_no
+          from  haba920t_tbl a
+         where a.cmpycd  = #{cmpycd}
+           and a.userid  = #{userid}
+    </select>
+
+    <update id="HABA_910U_UPDATE" parameterType="map">
+        UPDATE haba920t_tbl
+           SET usernm      = #{usernm},
+               deptcd      = #{deptcd},
+               deptnm      = #{deptnm},
+               telno       = #{telno},
+               hpno        = #{hpno},
+               email       = #{email},
+               pw          = #{pw},
+               useyn       = #{useyn},
+               updemp      = #{updemp},
+               pricegbn    = #{pricegbn},
+               photo_path  = #{photo_path},
+               inner_no    = #{inner_no},
+               updtime     = NOW()
+         WHERE cmpycd = #{cmpycd}
+           AND userid = #{userid}
+    </update>
+
+    <select id="HABA_920U_SELECT" parameterType="map" resultType="map">
+        <choose>
+            <when test="actkind == 'S1'">
+                select  a.cmpycd,   a.userid,   a.usernm,   a.deptcd,   a.deptnm,   a.empno,    a.salsyn,
+                        a.pw,       a.telno,    a.hpno,     a.email,    a.sdept,    b.deptnm as sdeptnm,
+                        a.useyn,    a.addtime,  a.updtime,  a.usergrp,  a.pricegbn, a.positionoff,
+                        ifnull(c.codenm,'') as  positionoffnm, a.inner_no, a.photo_path
+                  from  haba920t_tbl a left outer join haba120t_tbl b
+                    on a.cmpycd  = b.cmpycd
+                   and a.sdept   = b.deptcd
+                       left outer join haba900t_tbl c
+                    on c.cdtype = '800'
+                   and c.useyn   = 'y'
+                   and a.positionoff = c.codecd
+                 where a.cmpycd  = #{cmpycd}
+                   and (a.userid like concat('%', #{word}, '%') or a.usernm like concat('%', #{word}, '%'))
+                 order by a.deptcd, a.positionoff, a.userid
+            </when>
+            <when test="actkind == 'S2'">
+                select  a.cmpycd,   a.userid,   a.usernm,   a.deptcd,   a.deptnm,   a.pw,   a.telno,    a.hpno, a.inner_no,
+                        a.email,    a.empno,    a.salsyn,   a.sdept,    b.deptnm as sdeptnm,a.useyn,    a.addtime,
+                        a.updtime,  a.usergrp,  a.pricegbn, a.positionoff, ifnull(c.codenm,'') as  positionoffnm, a.photo_path
+                  from   haba920t_tbl a left outer join haba120t_tbl b
+                    on   a.cmpycd  = b.cmpycd
+                   and   a.sdept   = b.deptcd
+                       left outer join haba900t_tbl c
+                    on c.cdtype = '800'
+                   and c.useyn   = 'Y'
+                   and a.positionoff = c.codecd
+                 where   a.cmpycd = #{cmpycd}
+                   and  (a.userid like concat('%', #{word}, '%') or a.usernm like concat('%', #{word}, '%'))
+                 order  by a.addtime, a.userid
+            </when>
+        </choose>
+    </select>
+
+    <insert id="HABA_920U_INSERT" parameterType="map">
+        INSERT INTO haba920t_tbl
+        (cmpycd, userid, usernm, deptcd, deptnm, empno, salsyn, telno, hpno, email, pw, sdept, positionoff, useyn, usergrp, addtime, updtime, pricegbn, inner_no, photo_path)
+        VALUES
+        (#{cmpycd}, #{userid}, #{usernm}, #{deptcd}, #{deptnm}, #{empno}, #{salsyn}, #{telno}, #{hpno}, #{email}, #{pw},
+         IFNULL(NULLIF(#{sdept}, ''), #{deptcd}), #{positionoff}, #{useyn}, #{usergrp}, NOW(), NOW(), #{pricegbn}, #{inner_no}, #{photo_path})
+        ON DUPLICATE KEY UPDATE
+        usernm = VALUES(usernm), deptcd = VALUES(deptcd), deptnm = VALUES(deptnm), empno = VALUES(empno),
+        salsyn = VALUES(salsyn), telno = VALUES(telno), hpno = VALUES(hpno), email = VALUES(email),
+        pw = VALUES(pw), sdept = VALUES(sdept), positionoff = VALUES(positionoff), useyn = VALUES(useyn),
+        usergrp = VALUES(usergrp), pricegbn = VALUES(pricegbn), inner_no = VALUES(inner_no),
+        photo_path = VALUES(photo_path), updtime = NOW()
+    </insert>
+
+    <update id="HABA_920U_UPDATE" parameterType="map">
+        UPDATE haba920t_tbl
+           SET usernm      = #{usernm},
+               deptcd      = #{deptcd},
+               deptnm      = #{deptnm},
+               empno       = #{empno},
+               salsyn      = #{salsyn},
+               telno       = #{telno},
+               hpno        = #{hpno},
+               email       = #{email},
+               pw          = #{pw},
+               sdept       = IFNULL(NULLIF(#{sdept}, ''), #{deptcd}),
+               useyn       = #{useyn},
+               usergrp     = #{usergrp},
+               updemp      = #{updemp},
+               pricegbn    = #{pricegbn},
+               positionoff = #{positionoff},
+               inner_no    = #{inner_no},
+               photo_path  = #{photo_path},
+               updtime     = NOW()
+         WHERE cmpycd = #{cmpycd}
+           AND userid = #{userid}
+    </update>
+
+    <delete id="HABA_920U_DELETE" parameterType="map">
+        DELETE FROM haba920t_tbl
+         WHERE cmpycd = #{cmpycd}
+           AND userid = #{userid}
+    </delete>
+
+    <select id="HABA_935U_SELECT_PERM" parameterType="map" resultType="map">
+        select a.pgmid, a.pgmnm, ifnull(b.useyn,'N') as useyn,
+               ifnull(b.dspord, a.dspord) as dspord, ifnull(b.mypgm,'N') as mypgm
+          from haaa800t_tbl a left outer join haba935t_tbl b
+            on a.pgmid  = b.pgmid
+           and a.useyn   = 'Y'
+           and b.cmpycd = #{cmpycd}
+           and b.usergrp = #{usergrp}
+         where a.upmucd  = #{upmucd}
+           and a.grpcd   = #{grpcd}
+           and a.useyn   = 'Y'
+         order by ifnull(b.dspord, a.dspord)
+    </select>
+
+    <select id="HABA_935U_SELECT_TREE" parameterType="map" resultType="map">
+        SELECT grpcd, grpnm
+          FROM haaa810t_tbl
+         WHERE upmucd  = #{upmucd}
+           AND useyn   = 'Y'
+         ORDER BY dspord
+    </select>
+
+    <insert id="HABA_935U_UPSERT" parameterType="map">
+        INSERT INTO haba935t_tbl
+        (cmpycd, usergrp, upmucd, grpcd, pgmid, pgmnm, dspord, useyn, mypgm, addtime, updtime, updemp)
+        VALUES
+        (#{cmpycd}, #{usergrp}, #{upmucd}, #{grpcd}, #{pgmid}, #{pgmnm}, CAST(IFNULL(NULLIF(#{dspord}, ''), '0') AS SIGNED), #{useyn}, #{mypgm}, NOW(), NOW(), #{updemp})
+        ON DUPLICATE KEY UPDATE
+        pgmnm = VALUES(pgmnm), dspord = VALUES(dspord), useyn = VALUES(useyn),
+        mypgm = VALUES(mypgm), updtime = NOW(), updemp = VALUES(updemp)
+    </insert>
+
+    <delete id="HABA_935U_DELETE" parameterType="map">
+        DELETE FROM haba935t_tbl
+         WHERE cmpycd  = #{cmpycd}
+           and usergrp = #{usergrp}
+           and upmucd  = #{upmucd}
+           and grpcd   = #{grpcd}
+           and pgmid   = #{pgmid}
+    </delete>
+
+</mapper>

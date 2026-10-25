@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.crmbank.erp.hsqt.mapper.HsqtMapper">
+
+    <select id="selectQuotationMaster" parameterType="map" resultType="map">
+        SELECT cmpycd AS cmpycd,
+               quatym AS quatym,
+               quatno AS quatno,
+               quatno AS qutno,
+               deptcd AS deptcd,
+               deptnm AS deptnm,
+               empno AS empno,
+               empnm AS empnm,
+               custcd AS custcd,
+               custnm AS custnm,
+               paycdn AS paycdn,
+               paycdnm AS paycdnm,
+               endwk AS endwk,
+               quatymd AS quatymd,
+               quatymd AS qutdt,
+               tel AS tel,
+               remark AS remark,
+               remark AS remk,
+               keymannm AS keymannm,
+               keymannm AS custemp,
+               email AS email,
+               validdate AS validdate,
+               addtime AS addtime,
+               updtime AS updtime,
+               updemp AS updemp,
+               (SELECT IFNULL(SUM(quatamt + quatvat), 0) FROM hsqt101t_tbl WHERE hsqt101t_tbl.cmpycd = hsqt100t_tbl.cmpycd AND hsqt101t_tbl.quatym = hsqt100t_tbl.quatym AND hsqt101t_tbl.quatno = hsqt100t_tbl.quatno) AS totamt
+          FROM hsqt100t_tbl
+         WHERE cmpycd = #{cmpycd}
+           <if test="quatym != null and quatym != ''">
+           AND quatym = #{quatym}
+           </if>
+           <if test="quatno != null and quatno != ''">
+           AND quatno = #{quatno}
+           </if>
+           <if test="deptcd != null and deptcd != ''">
+           AND deptcd = #{deptcd}
+           </if>
+           <if test="custnm != null and custnm != ''">
+           AND custnm LIKE CONCAT('%', #{custnm}, '%')
+           </if>
+         ORDER BY quatym DESC, quatno DESC
+    </select>
+
+    <select id="selectQuotationDetail" parameterType="map" resultType="map">
+        SELECT cmpycd AS cmpycd,
+               quatym AS quatym,
+               quatno AS quatno,
+               qrowno AS qrowno,
+               itemcd AS itemcd,
+               itemnm AS itemnm,
+               itsize AS itsize,
+               itsize AS spec,
+               unit AS unit,
+               quatqty AS quatqty,
+               quatqty AS quty,
+               quatamt AS quatamt,
+               quatamt AS uprc,
+               quatamt AS amtx,
+               quatvat AS quatvat,
+               pchamt AS pchamt,
+               cost AS cost,
+               profit AS profit,
+               addtime AS addtime,
+               updtime AS updtime,
+               updemp AS updemp
+          FROM hsqt101t_tbl
+         WHERE cmpycd = #{cmpycd}
+           AND quatym = #{quatym}
+           AND quatno = #{quatno}
+         ORDER BY qrowno ASC
+    </select>
+
+    <select id="selectQuotationStatus" parameterType="map" resultType="map">
+        select a.cmpycd as cmpycd, a.quatym as quatym, a.quatno as quatno, a.quatno as qutno,
+               a.deptcd as deptcd, a.deptnm as deptnm, a.empno as empno, a.empnm as empnm,
+               a.custcd as custcd, a.custnm as custnm, a.quatymd as quatymd, a.quatymd as qutdt,
+               a.validdate as validdate, a.remark as remark, a.remark as remk, a.keymannm as keymannm, a.tel as tel,
+               b.qrowno as qrowno, b.itemcd as itemcd, b.itemnm as itemnm, b.itsize as itsize, b.itsize as spec, b.unit as unit,
+               b.quatqty as quatqty, b.quatqty as quty, b.quatamt as quatamt, b.quatamt as uprc, b.quatamt as amtx, b.quatvat as quatvat,
+               (ifnull(b.quatamt, 0) + ifnull(b.quatvat, 0)) as quatsum
+          from hsqt100t_tbl a
+          left join hsqt101t_tbl b on a.cmpycd = b.cmpycd and a.quatym = b.quatym and a.quatno = b.quatno
+         where a.cmpycd = #{cmpycd}
+           <if test="deptcd != null and deptcd != ''">
+           and a.deptcd = #{deptcd}
+           </if>
+           <if test="custnm != null and custnm != ''">
+           and a.custnm like concat('%', #{custnm}, '%')
+           </if>
+         order by a.quatym desc, a.quatno desc, b.qrowno asc
+    </select>
+
+    <insert id="insertQuotationMaster" parameterType="map">
+        insert into hsqt100t_tbl (
+            cmpycd, quatym, quatno, deptcd, deptnm, empno, empnm, custcd, custnm,
+            paycdn, paycdnm, endwk, quatymd, tel, remark, keymannm, email, validdate, addtime, updtime, updemp
+        ) values (
+            #{cmpycd}, #{quatym}, #{quatno}, #{deptcd}, #{deptnm}, #{empno}, #{empnm}, #{custcd}, #{custnm},
+            #{paycdn}, #{paycdnm}, #{endwk}, #{quatymd}, #{tel}, #{remark}, #{keymannm}, #{email}, #{validdate}, now(), now(), #{updemp}
+        )
+    </insert>
+
+    <update id="updateQuotationMaster" parameterType="map">
+        UPDATE hsqt100t_tbl
+           SET deptcd = #{deptcd},
+               deptnm = #{deptnm},
+               empno = #{empno},
+               empnm = #{empnm},
+               custcd = #{custcd},
+               custnm = #{custnm},
+               paycdn = #{paycdn},
+               paycdnm = #{paycdnm},
+               endwk = #{endwk},
+               quatymd = #{quatymd},
+               tel = #{tel},
+               remark = #{remark},
+               keymannm = #{keymannm},
+               email = #{email},
+               validdate = #{validdate},
+               updtime = NOW(),
+               updemp = #{updemp}
+         WHERE cmpycd = #{cmpycd}
+           AND quatym = #{quatym}
+           AND quatno = #{quatno}
+    </update>
+
+    <delete id="deleteQuotationMaster" parameterType="map">
+        DELETE FROM hsqt100t_tbl
+         WHERE cmpycd = #{cmpycd}
+           AND quatym = #{quatym}
+           AND quatno = #{quatno}
+    </delete>
+
+    <insert id="insertQuotationDetail" parameterType="map">
+        INSERT INTO hsqt101t_tbl (
+            cmpycd, quatym, quatno, qrowno, itemcd, itemnm, itsize, unit,
+            quatqty, quatamt, quatvat, pchamt, cost, profit, addtime, updtime, updemp
+        ) VALUES (
+            #{cmpycd}, #{quatym}, #{quatno}, #{qrowno}, #{itemcd}, #{itemnm}, #{itsize}, #{unit},
+            #{quatqty}, #{quatamt}, #{quatvat}, #{pchamt}, #{cost}, #{profit}, NOW(), NOW(), #{updemp}
+        )
+    </insert>
+
+    <update id="updateQuotationDetail" parameterType="map">
+        UPDATE hsqt101t_tbl
+           SET itemcd = #{itemcd},
+               itemnm = #{itemnm},
+               itsize = #{itsize},
+               unit = #{unit},
+               quatqty = #{quatqty},
+               quatamt = #{quatamt},
+               quatvat = #{quatvat},
+               pchamt = #{pchamt},
+               cost = #{cost},
+               profit = #{profit},
+               updtime = NOW(),
+               updemp = #{updemp}
+         WHERE cmpycd = #{cmpycd}
+           AND quatym = #{quatym}
+           AND quatno = #{quatno}
+           AND qrowno = #{qrowno}
+    </update>
+
+    <delete id="deleteQuotationDetail" parameterType="map">
+        DELETE FROM hsqt101t_tbl
+         WHERE cmpycd = #{cmpycd}
+           AND quatym = #{quatym}
+           AND quatno = #{quatno}
+           <if test="qrowno != null and qrowno != ''">
+           AND qrowno = #{qrowno}
+           </if>
+    </delete>
+
+    <select id="selectMaxQuatNo" resultType="string">
+        SELECT LPAD(IFNULL(MAX(CAST(quatno AS UNSIGNED)), 0) + 1, 4, '0')
+          FROM hsqt100t_tbl
+         WHERE cmpycd = #{cmpycd}
+           AND quatym = #{quatym}
+    </select>
+
+    <select id="selectMaxRowNo" resultType="string">
+        SELECT LPAD(IFNULL(MAX(CAST(qrowno AS UNSIGNED)), 0) + 1, 3, '0')
+          FROM hsqt101t_tbl
+         WHERE cmpycd = #{cmpycd}
+           AND quatym = #{quatym}
+           AND quatno = #{quatno}
+    </select>
+
+</mapper>
