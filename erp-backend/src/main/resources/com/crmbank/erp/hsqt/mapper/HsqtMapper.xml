@@ -62,6 +62,7 @@
                quatamt AS uprc,
                quatamt AS amtx,
                quatvat AS quatvat,
+               quatvat AS vat,
                pchamt AS pchamt,
                cost AS cost,
                profit AS profit,
@@ -81,7 +82,7 @@
                a.custcd as custcd, a.custnm as custnm, a.quatymd as quatymd, a.quatymd as qutdt,
                a.validdate as validdate, a.remark as remark, a.remark as remk, a.keymannm as keymannm, a.tel as tel,
                b.qrowno as qrowno, b.itemcd as itemcd, b.itemnm as itemnm, b.itsize as itsize, b.itsize as spec, b.unit as unit,
-               b.quatqty as quatqty, b.quatqty as quty, b.quatamt as quatamt, b.quatamt as uprc, b.quatamt as amtx, b.quatvat as quatvat,
+               b.quatqty as quatqty, b.quatqty as quty, b.quatamt as quatamt, b.quatamt as uprc, b.quatamt as amtx, b.quatvat as quatvat, b.quatvat as vat,
                (ifnull(b.quatamt, 0) + ifnull(b.quatvat, 0)) as quatsum
           from hsqt100t_tbl a
           left join hsqt101t_tbl b on a.cmpycd = b.cmpycd and a.quatym = b.quatym and a.quatno = b.quatno

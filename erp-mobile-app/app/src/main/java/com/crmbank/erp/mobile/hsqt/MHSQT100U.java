@@ -34,12 +34,12 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
- * 🚀 [MHSQT_100U] 견적서 등록 프로그램 (모바일)
+ * 🚀 [MHSQT_100U] 견적서 등록 프로그램 (모바일 - 품목명, 규격, 단위, 수량, 단가, 금액, 부가세, 담당자, 메일 연동)
  */
 public class MHSQT100U extends AppCompatActivity {
 
     private TextView tvHeaderTitle, tvQuatYmd, tvValidDate;
-    private EditText etQuatYm, etQuatNo, etCustName, etRemark;
+    private EditText etQuatYm, etQuatNo, etCustName, etCustEmp, etEmail, etRemark;
     private AppCompatButton btnNew, btnSave, btnSearch, btnAddRow;
     private ListView lvDetailList;
 
@@ -64,6 +64,8 @@ public class MHSQT100U extends AppCompatActivity {
         etQuatYm = findViewById(R.id.etQuatYm);
         etQuatNo = findViewById(R.id.etQuatNo);
         etCustName = findViewById(R.id.etCustName);
+        etCustEmp = findViewById(R.id.etCustEmp);
+        etEmail = findViewById(R.id.etEmail);
         tvQuatYmd = findViewById(R.id.tvQuatYmd);
         tvValidDate = findViewById(R.id.tvValidDate);
         etRemark = findViewById(R.id.etRemark);
@@ -111,10 +113,9 @@ public class MHSQT100U extends AppCompatActivity {
         row.put("itemnm", "");
         row.put("itsize", "");
         row.put("unit", "EA");
-        row.put("quatqty", "1");
-        row.put("price", "0");
-        row.put("quatamt", "0");
-        row.put("quatvat", "0");
+        row.put("quatqty", 1);
+        row.put("quatamt", 0);
+        row.put("quatvat", 0);
         detailList.add(row);
         detailAdapter.notifyDataSetChanged();
     }
@@ -125,6 +126,8 @@ public class MHSQT100U extends AppCompatActivity {
         etQuatYm.setText(currentYm);
         etQuatNo.setText("0000");
         etCustName.setText("");
+        etCustEmp.setText("");
+        etEmail.setText("");
         tvQuatYmd.setText(today);
         tvValidDate.setText(today);
         etRemark.setText("");
@@ -153,6 +156,8 @@ public class MHSQT100U extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     Map<String, Object> master = response.body().get(0);
                     etCustName.setText(master.get("custnm") != null ? String.valueOf(master.get("custnm")) : "");
+                    etCustEmp.setText(master.get("keymannm") != null ? String.valueOf(master.get("keymannm")) : "");
+                    etEmail.setText(master.get("email") != null ? String.valueOf(master.get("email")) : "");
                     tvQuatYmd.setText(master.get("quatymd") != null ? String.valueOf(master.get("quatymd")) : "");
                     tvValidDate.setText(master.get("validdate") != null ? String.valueOf(master.get("validdate")) : "");
                     etRemark.setText(master.get("remark") != null ? String.valueOf(master.get("remark")) : "");
@@ -215,6 +220,8 @@ public class MHSQT100U extends AppCompatActivity {
         master.put("quatym", quatym);
         master.put("quatno", quatno);
         master.put("custnm", custnm);
+        master.put("keymannm", etCustEmp.getText().toString().trim());
+        master.put("email", etEmail.getText().toString().trim());
         master.put("quatymd", tvQuatYmd.getText().toString().replace("-", ""));
         master.put("validdate", tvValidDate.getText().toString().replace("-", ""));
         master.put("remark", etRemark.getText().toString());
@@ -275,11 +282,17 @@ public class MHSQT100U extends AppCompatActivity {
             }
 
             Map<String, Object> item = items.get(position);
-            String itemNm = item.get("itemnm") != null ? String.valueOf(item.get("itemnm")) : "품목 미입력";
+            String itemNm = item.get("itemnm") != null ? String.valueOf(item.get("itemnm")) : "품목명 입력";
+            String itsize = item.get("itsize") != null ? String.valueOf(item.get("itsize")) : "-";
+            String unit = item.get("unit") != null ? String.valueOf(item.get("unit")) : "EA";
+
+            holder.text1.setText(itemNm + " (" + itsize + " / " + unit + ")");
+
             Object qtyObj = item.get("quatqty");
             Object amtObj = item.get("quatamt");
-            holder.text1.setText("품목: " + itemNm);
-            holder.text2.setText("수량: " + (qtyObj != null ? qtyObj : "0") + " | 금액: " + (amtObj != null ? amtObj : "0"));
+            Object vatObj = item.get("quatvat");
+
+            holder.text2.setText("수량: " + (qtyObj != null ? qtyObj : "1") + " | 단가: " + (amtObj != null ? amtObj : "0") + " | 부가세: " + (vatObj != null ? vatObj : "0"));
 
             return view;
         }

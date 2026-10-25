@@ -194,7 +194,14 @@ const initMasterTable = () => {
     columns: [
       { formatter: 'rownum', title: 'No', width: 80, hozAlign: 'center' },
       { title: '견적번호', field: 'qutno', width: 120, hozAlign: 'center' },
-      { title: '견적일자', field: 'qutdt', width: 100, hozAlign: 'center' },
+      { title: '견적일자', field: 'qutdt', width: 100, hozAlign: 'center', formatter: (cell) => {
+          const val = cell.getValue()
+          if (val && val.length === 8 && !val.includes('-')) {
+            return `${val.substring(0, 4)}-${val.substring(4, 6)}-${val.substring(6, 8)}`
+          }
+          return val
+        }
+      },
       { title: '거래처명', field: 'custnm', width: 150, hozAlign: 'left' },
       { title: '업체담당자', field: 'custemp', width: 100, hozAlign: 'center' },
       { title: '메일주소', field: 'email', width: 150, hozAlign: 'left' },
@@ -206,8 +213,22 @@ const initMasterTable = () => {
   masterTabulator.on('rowClick', (e, row) => {
     const data = row.getData()
     Object.assign(formMaster, data)
-    fetchDetail(data.qutno)
+    if (formMaster.qutdt && formMaster.qutdt.length === 8 && !formMaster.qutdt.includes('-')) {
+      formMaster.qutdt = `${formMaster.qutdt.substring(0, 4)}-${formMaster.qutdt.substring(4, 6)}-${formMaster.qutdt.substring(6, 8)}`
+    }
+    const quatym = data.quatym || (data.qutdt ? data.qutdt.replace(/-/g, '').substring(0, 6) : '')
+    const quatno = data.quatno || data.qutno
+    fetchDetail(quatym, quatno)
   })
+}
+
+const calculateRow = (row: any) => {
+  const data = row.getData()
+  const quty = Math.round(Number(data.quty) || 0)
+  const uprc = Math.round(Number(data.uprc) || 0)
+  const amtx = quty * uprc
+  const vat = Math.floor(amtx * 0.1)
+  row.update({ quty, uprc, amtx, vat })
 }
 
 const initDetailTable = () => {
@@ -217,18 +238,19 @@ const initDetailTable = () => {
     height: '100%',
     placeholder: '상세 품목이 없습니다.',
     columns: [
-      { formatter: 'rownum', title: 'No', width: 80, hozAlign: 'center' },
-      { title: '품목명', field: 'itemnm', minWidth: 160, hozAlign: 'left', editor: 'input', cellClick: (e, cell) => {
+      { formatter: 'rownum', title: 'No', width: 70, hozAlign: 'center' },
+      { title: '품목명', field: 'itemnm', minWidth: 180, hozAlign: 'left', editor: 'input', cellClick: (e, cell) => {
           if (e.target.tagName !== 'INPUT') {
             openItemHelp(cell.getRow())
           }
         }
       },
-      { title: '규격', field: 'spec', width: 120, hozAlign: 'left' },
-      { title: '단위', field: 'unit', width: 70, hozAlign: 'center' },
-      { title: '수량', field: 'quty', width: 80, hozAlign: 'right', editor: 'input', formatter: 'money' },
-      { title: '단가', field: 'uprc', width: 100, hozAlign: 'right', editor: 'input', formatter: 'money' },
-      { title: '금액', field: 'amtx', width: 110, hozAlign: 'right', formatter: 'money' }
+      { title: '규격', field: 'spec', width: 100, hozAlign: 'left' },
+      { title: '단위', field: 'unit', width: 60, hozAlign: 'center' },
+      { title: '수량', field: 'quty', width: 75, hozAlign: 'right', editor: 'input', formatter: 'money', formatterParams: { precision: 0 }, cellEdited: (cell) => calculateRow(cell.getRow()) },
+      { title: '단가', field: 'uprc', width: 90, hozAlign: 'right', editor: 'input', formatter: 'money', formatterParams: { precision: 0 }, cellEdited: (cell) => calculateRow(cell.getRow()) },
+      { title: '금액', field: 'amtx', width: 100, hozAlign: 'right', formatter: 'money', formatterParams: { precision: 0 }, cellEdited: (cell) => calculateRow(cell.getRow()) },
+      { title: '부가세', field: 'vat', width: 90, hozAlign: 'right', editor: 'input', formatter: 'money', formatterParams: { precision: 0 }, cellEdited: (cell) => calculateRow(cell.getRow()) }
     ]
   })
 }
@@ -251,12 +273,18 @@ const openItemHelp = (row: any) => {
   activeDetailRow = row
   openHelp('ITEM', (d: any) => {
     if (activeDetailRow) {
+      const uprc = Number(d.uprc || d.saleuprc || d.outcost || 0)
+      const quty = Number(activeDetailRow.getData().quty) || 1
+      const amtx = quty * uprc
+      const vat = Math.floor(amtx * 0.1)
       activeDetailRow.update({
         itemcd: d.itemcd || d.codecd || '',
         itemnm: d.itemnm || d.codenm || '',
         spec: d.spec || d.itemspec || '',
         unit: d.unit || d.itemunit || '',
-        uprc: d.uprc || d.saleuprc || d.outcost || 0
+        uprc: uprc,
+        amtx: amtx,
+        vat: vat
       })
     }
   }, { gubun: 'I1' })
@@ -283,9 +311,9 @@ const fetchMaster = async () => {
   }
 }
 
-const fetchDetail = async (qutno: string) => {
+const fetchDetail = async (quatym: string, quatno: string) => {
   try {
-    const res = await api.get('/api/hsqt/detail', { params: { qutno } })
+    const res = await api.get('/api/hsqt/detail', { params: { quatym, quatno, qutno: quatno } })
     if (detailTabulator) detailTabulator.setData(res.data || [])
   } catch (err: any) {
     vAlertError(err.response?.data?.message || '디테일 조회 중 오류가 발생했습니다.')
@@ -294,15 +322,19 @@ const fetchDetail = async (qutno: string) => {
 
 const addDetailRow = () => {
   if (detailTabulator) {
-    detailTabulator.addRow({ itemcd: '', itemnm: '', spec: '', unit: '', quty: 1, uprc: 0, amtx: 0 })
+    detailTabulator.addRow({ itemcd: '', itemnm: '', spec: '', unit: '', quty: 1, uprc: 0, amtx: 0, vat: 0 })
   }
 }
 
 const saveData = async () => {
   try {
     const details = detailTabulator ? detailTabulator.getData() : []
+    const formattedMaster = {
+      ...formMaster,
+      qutdt: formMaster.qutdt ? formMaster.qutdt.replace(/-/g, '') : ''
+    }
     const payload = {
-      master: formMaster,
+      master: formattedMaster,
       details: details
     }
     await api.post('/api/hsqt/save', payload)

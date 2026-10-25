@@ -21,6 +21,13 @@ public class HsqtService {
     }
 
     public List<Map<String, Object>> getQuotationDetail(Map<String, Object> params) {
+        if (params.get("quatym") == null && params.get("qutdt") != null) {
+            String ymd = String.valueOf(params.get("qutdt")).replace("-", "");
+            if (ymd.length() >= 6) params.put("quatym", ymd.substring(0, 6));
+        }
+        if (params.get("quatno") == null && params.get("qutno") != null) {
+            params.put("quatno", params.get("qutno"));
+        }
         return hsqtMapper.selectQuotationDetail(params);
     }
 
@@ -95,7 +102,11 @@ public class HsqtService {
                     }
                 }
                 if (detail.get("quatvat") == null) {
-                    detail.put("quatvat", 0);
+                    if (detail.get("vat") != null) {
+                        detail.put("quatvat", detail.get("vat"));
+                    } else {
+                        detail.put("quatvat", 0);
+                    }
                 }
                 if (detail.get("pchamt") == null) {
                     detail.put("pchamt", 0);
